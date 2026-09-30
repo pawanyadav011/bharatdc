@@ -13,9 +13,41 @@ import {
   DashboardStats,
 } from '../types';
 
-const API_BASE_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
-  'http://localhost:5000/api';
+/**
+ * Resolves the API Base URL:
+ * - Reads import.meta.env.VITE_API_URL if configured
+ * - In production mode, defaults to 'https://bharatdc.onrender.com'
+ * - In local development mode, defaults to 'http://localhost:5000'
+ * - Automatically normalizes trailing slashes and ensures the '/api' prefix is attached.
+ */
+export const getApiBaseUrl = (): string => {
+  const isProd = Boolean(typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.PROD);
+  const envUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || '';
+  let rawUrl = (typeof envUrl === 'string' ? envUrl : '').trim();
+
+  // In production mode, ensure public Render backend URL is used
+  if (isProd) {
+    if (!rawUrl || rawUrl.includes('localhost') || rawUrl.includes('127.0.0.1')) {
+      rawUrl = 'https://bharatdc.onrender.com';
+    }
+  } else {
+    // In local development, fallback to localhost:5000
+    if (!rawUrl) {
+      rawUrl = 'http://localhost:5000';
+    }
+  }
+
+  // Strip trailing slashes
+  rawUrl = rawUrl.replace(/\/+$/, '');
+
+  // Append /api if not already present
+  if (rawUrl.endsWith('/api')) {
+    return rawUrl;
+  }
+  return `${rawUrl}/api`;
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 class ApiError extends Error {
   statusCode: number;
